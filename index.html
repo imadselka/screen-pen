@@ -1,24 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Screen Pen</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: transparent;
-      overflow: hidden;
-    }
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-  </style>
-</head>
-<body>
-  <canvas id="canvas"></canvas>
-  <script src="renderer.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Screen Pen</title>
+    <style>
+      :root {
+        --primary-color: #3498db;
+        --secondary-color: #2ecc71;
+        --danger-color: #e74c3c;
+        --toolbar-bg: rgba(33, 33, 33, 0.85);
+        --toolbar-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        --transition-speed: 0.3s;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        overflow: hidden;
+        font-family: "Segoe UI", Arial, sans-serif;
+        height: 100%;
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .toolbar {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(0);
+        background-color: var(--toolbar-bg);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 1000;
+        box-shadow: var(--toolbar-shadow);
+        transition: transform var(--transition-speed) ease,
+          opacity var(--transition-speed) ease;
+      }
+
+      .toolbar.hidden {
+        transform: translateX(-50%) translateY(-100px);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .divider {
+        width: 1px;
+        height: 30px;
+        background-color: rgba(255, 255, 255, 0.3);
+        margin: 0 4px;
+      }
+
+      button {
+        border: none;
+        background: transparent;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+
+      button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      button.active {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+
+      button svg {
+        width: 18px;
+        height: 18px;
+        fill: white;
+      }
+
+      .color-btn {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        margin: 0 2px;
+        border: 2px solid transparent;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+
+      .color-btn:hover {
+        transform: scale(1.1);
+      }
+
+      .color-btn.active {
+        border-color: white;
+        transform: scale(1.1);
+      }
+
+      #red-pen {
+        background-color: #e74c3c;
+      }
+      #green-pen {
+        background-color: #2ecc71;
+      }
+      #blue-pen {
+        background-color: #3498db;
+      }
+      #black-pen {
+        background-color: #34495e;
+      }
+      #yellow-pen {
+        background-color: #f1c40f;
+      }
+
+      .size-slider {
+        width: 80px;
+        height: 4px;
+        appearance: none;
+        background: rgba(255, 255, 255, 0.3);
+        outline: none;
+        border-radius: 2px;
+      }
+
+      .size-slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        cursor: pointer;
+      }
+
+      #show-ui {
+        position: fixed;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--toolbar-bg);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 1000;
+        box-shadow: var(--toolbar-shadow);
+      }
+
+      #show-ui.visible {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      #show-ui svg {
+        width: 24px;
+        height: 24px;
+        fill: white;
+      }
+
+      #keyboard-info {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: var(--toolbar-bg);
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.7);
+        pointer-events: none;
+        opacity: 0.5;
+        transition: opacity 0.3s ease;
+      }
+
+      #keyboard-info:hover {
+        opacity: 1;
+      }
+
+      kbd {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+        padding: 2px 5px;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar" class="toolbar">
+      <div class="group">
+        <!-- Color buttons -->
+        <button
+          id="red-pen"
+          class="color-btn active"
+          onclick="setPen('red')"
+          title="Red pen (r)"
+        ></button>
+        <button
+          id="green-pen"
+          class="color-btn"
+          onclick="setPen('green')"
+          title="Green pen (g)"
+        ></button>
+        <button
+          id="blue-pen"
+          class="color-btn"
+          onclick="setPen('blue')"
+          title="Blue pen (b)"
+        ></button>
+        <button
+          id="black-pen"
+          class="color-btn"
+          onclick="setPen('#34495e')"
+          title="Black pen"
+        ></button>
+        <button
+          id="yellow-pen"
+          class="color-btn"
+          onclick="setPen('#f1c40f')"
+          title="Yellow pen"
+        ></button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <!-- Pen size -->
+        <span style="color: white; font-size: 12px">Size:</span>
+        <input
+          type="range"
+          min="1"
+          max="20"
+          value="4"
+          class="size-slider"
+          id="pen-size"
+          oninput="setPenSize(this.value)"
+          title="Pen size"
+        />
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <!-- Tools -->
+        <button id="eraser" onclick="setEraser()" title="Eraser (e)">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M16.24 3.56L21.19 8.5c.39.39.39 1.02 0 1.41L12.7 18.9c-.39.39-1.02.39-1.41 0L2.81 10.41c-.39-.39-.39-1.02 0-1.41l8.5-8.5c.39-.39 1.02-.39 1.41 0l3.52 3.52zm-5.66 11.97l6.36-6.36-4.24-4.24-6.36 6.36 4.24 4.24z"
+            />
+          </svg>
+        </button>
+        <input
+          type="range"
+          min="10"
+          max="60"
+          value="30"
+          class="size-slider"
+          id="eraser-size"
+          oninput="setEraserSize(this.value)"
+          title="Eraser size"
+        />
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <!-- Clear button -->
+        <button id="clear" onclick="clearCanvas()" title="Clear canvas (c)">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            />
+          </svg>
+        </button>
+        <button id="hide-ui" onclick="toggleUI()" title="Hide UI (Ctrl+H)">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M11.83 9L15 12.16V12a3 3 0 00-3-3h-.17m-4.3.8l1.55 1.55c-.05.21-.08.42-.08.65a3 3 0 003 3c.22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53a5 5 0 01-5-5c0-.79.2-1.53.53-2.2M2 4.27l2.28 2.28.45.45C3.08 8.3 2 10.02 2 12c0 2.42 1.72 4.56 4 5.78V19H8v-1.6c.91.35 1.88.6 3 .6 1.12 0 2.09-.25 3-.59V19h2v-1.22c.16-.08.31-.16.47-.25l3.53 3.53 1.27-1.27L3.89 3l-1.89.77"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="show-ui" onclick="showUI()">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+        />
+      </svg>
+    </div>
+
+    <div id="keyboard-info">
+      <div>
+        Shortcuts: <kbd>R</kbd> Red <kbd>G</kbd> Green <kbd>B</kbd> Blue
+        <kbd>E</kbd> Eraser <kbd>C</kbd> Clear <kbd>Ctrl+H</kbd> Hide UI
+      </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+    <script src="Renderer.js"></script>
+  </body>
 </html>
