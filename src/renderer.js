@@ -14,8 +14,8 @@ let eraserSize = 30;
 let isUIVisible = true;
 
 // Fix cursor paths - use relative paths from the app root
-const penCursor = "./public/images/pen.png";
-const eraserCursor = "./public/images/eraser.png";
+const penCursor = "../public/images/pen.png";
+const eraserCursor = "../public/images/eraser.png";
 
 // Initialize cursor
 window.addEventListener("load", () => {
