@@ -17,58 +17,10 @@ function createWindow() {
 
   mainWindow.setAlwaysOnTop(true);
   mainWindow.loadFile("./src/index.html");
-
-  // This allows clicks to pass through areas without UI elements
-  mainWindow.setIgnoreMouseEvents(true, { forward: true });
-
-  // We'll toggle this with keyboard shortcuts and based on toolbar visibility
-  mainWindow.webContents.on("did-finish-load", () => {
-    mainWindow.webContents.executeJavaScript(`
-      document.addEventListener('mouseover', (e) => {
-        if (e.target.closest('#toolbar') || e.target.closest('#show-ui') || e.target.closest('#keyboard-info')) {
-          window.electronAPI.setIgnoreMouseEvents(false);
-        }
-      });
-      
-      document.addEventListener('mouseout', (e) => {
-        if (e.target.closest('#toolbar') || e.target.closest('#show-ui') || e.target.closest('#keyboard-info')) {
-          if (!isDrawing) {
-            window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
-          }
-        }
-      });
-
-      // Add this to the global scope to track drawing state
-      window.isDrawing = false;
-      document.addEventListener('mousedown', () => { 
-        window.isDrawing = true;
-        window.electronAPI.setIgnoreMouseEvents(false);
-      });
-      document.addEventListener('mouseup', () => { 
-        window.isDrawing = false;
-        if (!document.querySelector('#toolbar:hover') && !document.querySelector('#show-ui:hover')) {
-          window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
-        }
-      });
-    `);
-  });
+  mainWindow.setIgnoreMouseEvents(false);
 }
 
 app.whenReady().then(() => {
-  // Set up IPC for mouse event control
-  ipcMain.handle("set-ignore-mouse-events", (event, ...args) => {
-    mainWindow.setIgnoreMouseEvents(...args);
-  });
-
-  // Expose electronAPI to renderer
-  mainWindow.webContents.on("did-finish-load", () => {
-    mainWindow.webContents.executeJavaScript(`
-      window.electronAPI = {
-        setIgnoreMouseEvents: (...args) => window.ipcRenderer.invoke('set-ignore-mouse-events', ...args)
-      };
-    `);
-  });
-
   // Create window first, then register shortcuts
   createWindow();
 
