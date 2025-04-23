@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut } = require('electron');
+const { app, BrowserWindow, globalShortcut } = require("electron");
 
 let win;
 
@@ -19,7 +19,7 @@ function createWindow() {
     },
   });
 
-  win.loadFile('index.html');
+  win.loadFile("./src/index.html");
   win.hide(); // Start hidden
 }
 
@@ -27,7 +27,7 @@ app.whenReady().then(() => {
   createWindow();
 
   // Global shortcut to toggle show/hide
-  globalShortcut.register('Control+Alt+P', () => {
+  globalShortcut.register("Control+Alt+P", () => {
     if (win.isVisible()) {
       win.hide();
     } else {
@@ -36,11 +36,11 @@ app.whenReady().then(() => {
   });
 
   // Optional: ESC to quit
-  globalShortcut.register('Control+Alt+Q', () => {
+  globalShortcut.register("Control+Alt+Q", () => {
     app.quit();
   });
 });
 
-app.on('will-quit', () => {
+app.on("will-quit", () => {
   globalShortcut.unregisterAll();
 });

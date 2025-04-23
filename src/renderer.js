@@ -11,8 +11,8 @@ let isErasing = false; // Track eraser mode
 let eraserSize = 30;  // Size of the eraser
 
 // Paths for the cursor images
-const penCursor = 'public/images/pen.png';  // Replace with your pen icon path
-const eraserCursor = 'public/images/eraser.png';  // Replace with your eraser icon path
+const penCursor = '../public/images/pen.png';  // Replace with your pen icon path
+const eraserCursor = '../public/images/eraser.png';  // Replace with your eraser icon path
 
 canvas.addEventListener('mousedown', () => {
   drawing = true;
